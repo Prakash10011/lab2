@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cat Breeds Information</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        button {
+            margin: 5px;
+            padding: 5px 10px;
+        }
+        #output {
+            margin-top: 20px;
+            border: 1px solid #ddd;
+            padding: 10px;
+            min-height: 100px;
+        }
+        .loading {
+            color: #888;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <h1>Cat Breeds Information</h1>
+
+    <button onclick="allNames()">ALL Names</button>
+    
+    <label for="health-issue">Health Issues:</label>
+    <input type="number" id="health-issue" placeholder="Enter issue number">
+    <button onclick="filterByHealthIssue()">Search</button>
+    
+    <div>
+        <input type="radio" id="imperial" name="unit" value="imperial" checked>
+        <label for="imperial">Imperial</label>
+        <input type="radio" id="metric" name="unit" value="metric">
+        <label for="metric">Metric</label>
+        <button onclick="showWeights()">Show Weight</button>
+    </div>
+
+    <button onclick="showIntelligenceFriendly()">Intelligence-Friendly</button>
+    <button onclick="averageIntelligence()">Average Intelligence</button>
+    <button onclick="averageIntelligenceForChildFriendly()">Average Intelligence for Child Friendly</button>
+
+    <div id="output"></div>
+
+    <script>
+        const jsonUrl = "https://api.thecatapi.com/v1/breeds";
+        const outputElement = document.getElementById("output");
+        let catData = [];
+
+        // Fetch data once when the page loads
+        window.onload = function() {
+            fetchData();
+        };
+
+        function fetchData() {
+            outputElement.innerHTML = '<p class="loading">Loading data...</p>';
+            fetch(jsonUrl)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    catData = data;
+                    outputElement.innerHTML = '<p>Click a button to view information.</p>';
+                })
+                .catch(error => {
+                    console.error('Error fetching JSON:', error);
+                    outputElement.innerHTML = '<p>Error loading data. Please try again later.</p>';
+                });
+        }
+
+        function allNames() {
+            if (catData.length === 0) {
+                outputElement.innerHTML = 'Data not loaded yet.';
+                return;
+            }
+            const totalBreeds = catData.length;
+            outputElement.innerHTML = `ALL Names (total = ${totalBreeds}):<br><hr>` + 
+                catData.map(cat => cat.name).join('<br>');
+        }
+
+        function filterByHealthIssue() {
+            const issueNumber = Number(document.getElementById("health-issue").value);
+            if (isNaN(issueNumber)) {
+                outputElement.innerHTML = 'Please enter a valid number.';
+                return;
+            }
+            const filteredCats = catData.filter(cat => cat.health_issues === issueNumber);
+            if (filteredCats.length > 0) {
+                const list = filteredCats.map(cat => cat.name).join('<br>');
+                outputElement.innerHTML = `Health Issues for ${issueNumber}:<br><hr>${list}<br><hr>Total = ${filteredCats.length}`;
+            } else {
+                outputElement.innerHTML = 'No cats found with that health issue number.';
+            }
+        }
+
+        function showWeights() {
+            const unit = document.querySelector('input[name="unit"]:checked').value;
+            if (catData.length === 0) {
+                outputElement.innerHTML = 'Data not loaded yet.';
+                return;
+            }
+            const weightType = unit === 'imperial' ? 'Imperial' : 'Metric';
+            const weightData = catData.map(cat => {
+                const weight = unit === 'imperial' ? cat.weight.imperial : cat.weight.metric;
+                return `${weight}`;
+            }).join('<br>');
+            
+            outputElement.innerHTML = `Weights in ${weightType}:<br><hr>${weightData}`;
+        }
+
+        function showIntelligenceFriendly() {
+            if (catData.length === 0) {
+                outputElement.innerHTML = 'Data not loaded yet.';
+                return;
+            }
+            outputElement.innerHTML = catData.map(cat => 
+                `${cat.name} - Intelligence: ${cat.intelligence}, Child Friendly: ${cat.child_friendly}`
+            ).join('<br>');
+        }
+
+        function averageIntelligence() {
+            if (catData.length === 0) {
+                outputElement.innerHTML = 'Data not loaded yet.';
+                return;
+            }
+            const totalIntelligence = catData.reduce((acc, cat) => acc + cat.intelligence, 0);
+            const avgIntelligence = (totalIntelligence / catData.length).toFixed(2);
+            outputElement.innerHTML = `Average Intelligence: ${avgIntelligence}`;
+        }
+
+        function averageIntelligenceForChildFriendly() {
+            if (catData.length === 0) {
+                outputElement.innerHTML = 'Data not loaded yet.';
+                return;
+            }
+            const friendlyCats = catData.filter(cat => cat.child_friendly >= 4);
+            if (friendlyCats.length === 0) {
+                outputElement.innerHTML = 'No child-friendly cats found.';
+                return;
+            }
+            const totalIntelligence = friendlyCats.reduce((acc, cat) => acc + cat.intelligence, 0);
+            const avgIntelligence = (totalIntelligence / friendlyCats.length).toFixed(2);
+            outputElement.innerHTML = `Average Intelligence for Child Friendly Cats: ${avgIntelligence}`;
+        }
+    </script>
+</body>
+</html>
